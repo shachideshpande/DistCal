@@ -6,7 +6,7 @@
 
 ## Installation 
 
-To run the code, you can install the dependencies with the following command:
+To run the code, you perform the following steps and install the dependencies.
 
 ```bash
 git clone https://github.com/shachideshpande/DistCal.git
