@@ -9,6 +9,8 @@
 To run the code, you can install the dependencies with the following command:
 
 ```bash
+git clone https://github.com/shachideshpande/DistCal.git
+cd DistCal
 conda env create -f env_nobuilds.yml
 ```
 
