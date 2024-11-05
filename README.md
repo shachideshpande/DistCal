@@ -29,13 +29,17 @@ from sklearn.linear_model import BayesianRidge
 from torchuq.evaluate.distribution_cal import *
 from torchuq.dataset.regression import *
 
+# Get the California Housing Dataset
+# Divide into 60% Train, 20% Calibration, 20% Test dataset
 dataset = get_regression_datasets("cal_housing", val_fraction=0.2, test_fraction=0.2, split_seed=0, normalize=True, verbose=True)
+
 
 train_dataset, cal_dataset, test_dataset = dataset
 X_train, y_train = train_dataset[:][0], train_dataset[:][1]
 X_cal, y_cal = cal_dataset[:][0], cal_dataset[:][1]
 X_test, y_test = test_dataset[:][0], test_dataset[:][1]
 
+# Convert the probabilistic outcome representation to a featurization using fixed number of equispaced quantiles
 quantiles_cal = convert_normal_to_quantiles(mean_cal, std_dev_cal, num_buckets)
 quantiles_test = convert_normal_to_quantiles(mean_test, std_dev_test, num_buckets)
 
@@ -45,6 +49,11 @@ reg = BayesianRidge().fit(X_train, y_train)
 # Train the distribution calibration model on an independent calibration dataset
 calibrator = DistCalibrator(num_buckets = num_buckets, quantile_input=True, verbose=True)
 calibrator.train(quantiles_cal, torch.Tensor(y_cal))
+
+# Recalibrated outcome prediction
+test_outcome = calibrator(quantiles_test)
+
+
 ```
 
 
