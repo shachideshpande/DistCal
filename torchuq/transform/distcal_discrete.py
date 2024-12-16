@@ -19,11 +19,10 @@ class DiscreteDistCalibrator(Calibrator):
     def __init__(self, verbose=False, platt_scaling=False):
         super(DiscreteDistCalibrator, self).__init__(input_type='continuous')
         self.verbose = verbose
-        
-        if(platt_scaling):
+        if(platt_scaling==True):
             self.model = LogisticRegression(random_state=0, C=5, solver='liblinear', penalty='l1', max_iter=1000)
         else:
-            self.model = MLPClassifier(random_state=0, hidden_layer_size=(10,), alpha=0.001, max_iter=1000, learning_rate='adaptive')
+            self.model = MLPClassifier(random_state=0, hidden_layer_sizes=(1,), alpha=0.005, max_iter=1000, learning_rate='adaptive')
 
     def train(self, train_predictions, train_labels, val_predictions=None, val_labels=None, *args, **kwargs):
         """ Trains the recalibrator using independent calibration dataset
