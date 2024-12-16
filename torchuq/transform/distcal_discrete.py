@@ -1,5 +1,6 @@
 import torch
 from sklearn.linear_model import LogisticRegression
+from sklearn.neural_network import MLPClassifier
 import numpy as np
 import pdb
 from .basic import Calibrator
@@ -15,10 +16,14 @@ class DiscreteDistCalibrator(Calibrator):
         verbose (bool): if verbose=True print detailed messsages 
 
     """
-    def __init__(self, verbose=False):
+    def __init__(self, verbose=False, platt_scaling=False):
         super(DiscreteDistCalibrator, self).__init__(input_type='continuous')
         self.verbose = verbose
-        self.model = LogisticRegression(random_state=0, C=5, solver='liblinear', penalty='l1', max_iter=1000)
+        
+        if(platt_scaling):
+            self.model = LogisticRegression(random_state=0, C=5, solver='liblinear', penalty='l1', max_iter=1000)
+        else:
+            self.model = MLPClassifier(random_state=0, hidden_layer_size=(10,), alpha=0.001, max_iter=1000, learning_rate='adaptive')
 
     def train(self, train_predictions, train_labels, val_predictions=None, val_labels=None, *args, **kwargs):
         """ Trains the recalibrator using independent calibration dataset

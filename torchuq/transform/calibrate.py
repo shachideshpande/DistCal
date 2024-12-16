@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim import lr_scheduler
+from sklearn.isotonic import IsotonicRegression
 import numpy as np
 import matplotlib.pyplot as plt
 import os, sys, shutil, copy, time, random
@@ -310,4 +311,57 @@ class HistogramBinning:
             self.bin_boundary.to(device)
         if self.bin_adjustment is not None:
             self.bin_adjustment.to(device)
+        self.device = device
+
+
+
+class RegressionCalibrator:
+    """ The class to recalibrate distribution over continuous outcomes represented as CDF outcome
+
+    This class implements quantile calibration, which is a weaker definition of calibration as compared with distribution calibration
+    
+    
+    Args:
+        verbose (bool): if verbose=True print non-error messsages 
+    """
+    def __init__(self, verbose=False):
+        
+        self.verbose = verbose
+        self.recalibrator = IsotonicRegression(increasing=True, y_min=0, y_max=1, out_of_bounds='clip')
+
+    def train(self, predictions, labels, *args, **kwargs):
+        """ Train the recalibration map 
+        
+        Args:
+            predictions (tensor): a batch of CDF outcomes with shape [batch_size]
+            labels (tensor): a batch of continuous outcome labels with shape [batch_size]
+        """
+        with torch.no_grad():
+            self.recalibrator.fit(predictions, labels)
+        
+    def __call__(self, predictions):
+        """ Use the learned calibration map to calibrate the predictions. 
+        
+        Only use this after calling RegressionCalibrator.train. 
+        
+        Args:
+            predictions (tensor): a batch of CDF outcomes with shape [batch_size]
+        
+        Returns:
+            tensor: the calibrated CDF prediction, it should have the same shape as the input predictions
+        """
+        
+        self.to(predictions)
+        with torch.no_grad():
+            calibrated_predictions = self.recalibrator.predict(predictions)
+        return calibrated_predictions
+    
+    
+    def to(self, device):
+        """ Move all assets of this class to a torch device. 
+        
+        Args:
+            device (device): the torch device (such as torch.device('cpu'))
+        """
+        device = _get_prediction_device(device)
         self.device = device
