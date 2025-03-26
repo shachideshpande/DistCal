@@ -26,6 +26,20 @@ def convert_normal_to_quantiles(mean, std_dev, num_buckets):
     quantiles[:, -1] = mean + 6*std_dev
     return quantiles
 
+def convert_normal_cdf_to_quantiles(mean, std_dev, cdf_value):
+    """ Converts prediction in the form of Normal distribution over outcomes to equispaced quantiles equal to num_buckets
+
+        Args:
+            mean (tensor): a batch of scalar means
+            std_dev (tensor): a batch of scalar outcomes
+            
+        Returns:
+            tensor: batch of cdf predictions represented as equispaced quantiles with the shape [batch_size, num_buckets]  
+        """
+    normal_dist = Normal(mean, std_dev)
+    quantiles = normal_dist.icdf(cdf_value).T
+    
+    return quantiles
 
 class EarlyStopper:
     """ Early stopping after validation loss begins to degrade

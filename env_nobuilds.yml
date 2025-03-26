@@ -67,8 +67,6 @@ dependencies:
   - libcxx=16.0.6
   - libdeflate=1.20
   - libffi=3.3
-  - libgfortran=4.0.0
-  - libgfortran4=7.5.0
   - libhwloc=2.10.0
   - libiconv=1.17
   - libjpeg-turbo=3.0.0
@@ -91,7 +89,6 @@ dependencies:
   - matplotlib-inline=0.1.6
   - mdit-py-plugins=0.4.2
   - mdurl=0.1.0
-  - mkl=2023.2.0
   - mpc=1.3.1
   - mpfr=4.2.1
   - mpmath=1.3.0

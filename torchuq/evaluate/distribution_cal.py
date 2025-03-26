@@ -104,7 +104,7 @@ def comparison_param_calibration_scores(x_q_data, x_data, y_data, taus=np.linspa
         cal_score_after = (((empirical_tau-expected_tau)**2)*empirical_tau).sum()
     return (cal_score_before, cal_score_after)
 
-def comparison_quantile_check_score(x_data, y_data, taus=np.linspace(0, 1, num=11), model=None):
+def comparison_quantile_check_score(x_data, y_data, taus=np.linspace(0, 1, num=11), model=None, quant_calibrated_outcome=None):
     """ 
     Computes check scores before and after applying recalibrator in the continuous outcome setting where distribution is featurized using equispaced quantiles. 
     """
@@ -116,12 +116,15 @@ def comparison_quantile_check_score(x_data, y_data, taus=np.linspace(0, 1, num=1
         if model:
           calibrated_outcome = model.model.predict((tau, x_data))[0]
         else:
-          calibrated_outcome = x_data[:, i]
+          calibrated_outcome = quant_calibrated_outcome[:, i]
+          # calibrated_outcome = x_data[:, i]
         temp_after = check_score(tau, calibrated_outcome, y_data).mean()
         check_score_before += temp_before
         check_score_after += temp_after
   
     return check_score_before, check_score_after.detach()
+
+
 
 def comparison_param_check_score(x_q_data, x_data, y_data, taus=np.linspace(0, 1, num=11), model=None):
     """ 

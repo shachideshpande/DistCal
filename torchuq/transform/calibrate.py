@@ -328,6 +328,7 @@ class RegressionCalibrator:
         
         self.verbose = verbose
         self.recalibrator = IsotonicRegression(increasing=True, y_min=0, y_max=1, out_of_bounds='clip')
+        self.inverse_recalibrator = IsotonicRegression(increasing=True, y_min=0, y_max=1, out_of_bounds='clip')
 
     def train(self, predictions, labels, *args, **kwargs):
         """ Train the recalibration map 
@@ -338,6 +339,7 @@ class RegressionCalibrator:
         """
         with torch.no_grad():
             self.recalibrator.fit(predictions, labels)
+            self.inverse_recalibrator.fit(labels, predictions)
         
     def __call__(self, predictions):
         """ Use the learned calibration map to calibrate the predictions. 
@@ -356,6 +358,23 @@ class RegressionCalibrator:
             calibrated_predictions = self.recalibrator.predict(predictions)
         return calibrated_predictions
     
+    def inverse_calibrator(self, num_buckets=11):
+        """ Use the learned calibration map to predict the inverse CDF (i.e. quantile function). 
+        
+        Only use this after calling RegressionCalibrator.train. 
+        
+        Args:
+            labels (tensor): a batch of CDF outcomes with shape [batch_size]
+        
+        Returns:
+            tensor: the inverse CDF of calibrated prediction (quantile), it should have the same shape as the input predictions
+        """
+        labels = torch.Tensor(np.linspace(0, 1, num=num_buckets))
+        # self.to(labels)
+        with torch.no_grad():
+            calibrated_labels = self.inverse_recalibrator.predict(labels)
+            print(labels.shape, calibrated_labels.shape)
+        return calibrated_labels
     
     def to(self, device):
         """ Move all assets of this class to a torch device. 
