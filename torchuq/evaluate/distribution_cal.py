@@ -1,7 +1,7 @@
 
 import numpy as np
 from sklearn.metrics import log_loss
-
+import torch
 def discrete_cal_loss(y_true, y_prob):
     """ 
     Log loss for probabilistic output over discrete outcomes 
@@ -26,6 +26,16 @@ def discrete_cal_score(y_true, y_prob):
 
     return result
 
+def compute_empirical_cdf(cdf):
+    """
+    This function takes the output CDF as produced by probabilistic model corresponding to each observed outcome in the dataset to produce empirical CDF 
+    This will be used to perform quantile calibration in Algorithm 1 of Kuleshov 2018
+    """
+
+    empirical_cdf = (torch.Tensor([torch.sum(cdf<=p) for p in cdf]))/len(cdf)
+
+    return empirical_cdf
+
 def comparison_quantile_calibration_scores(x_data, y_data, taus=np.linspace(0, 1, num=11), model=None, old_quantiles=None):
     """ 
     Computes weighted calibration scores before and after applying recalibrator in the continuous outcome setting where distribution is featurized using equispaced quantiles. 
@@ -47,6 +57,7 @@ def comparison_quantile_calibration_scores(x_data, y_data, taus=np.linspace(0, 1
           q_new = model.model.predict((tau, x_data))[0]
         else:
           q_new = q_old
+       
 
         # Todo: write efficient code
         for outcome_i, outcome in enumerate(y_data):

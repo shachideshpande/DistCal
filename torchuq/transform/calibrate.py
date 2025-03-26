@@ -373,7 +373,7 @@ class RegressionCalibrator:
         # self.to(labels)
         with torch.no_grad():
             calibrated_labels = self.inverse_recalibrator.predict(labels)
-            print(labels.shape, calibrated_labels.shape)
+            
         return calibrated_labels
     
     def to(self, device):

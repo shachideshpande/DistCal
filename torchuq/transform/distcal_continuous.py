@@ -26,7 +26,7 @@ def convert_normal_to_quantiles(mean, std_dev, num_buckets):
     quantiles[:, -1] = mean + 6*std_dev
     return quantiles
 
-def convert_normal_cdf_to_quantiles(mean, std_dev, cdf_value):
+def convert_normal_cdf_to_quantiles(mean, std_dev, cdf_values):
     """ Converts prediction in the form of Normal distribution over outcomes to equispaced quantiles equal to num_buckets
 
         Args:
@@ -37,8 +37,14 @@ def convert_normal_cdf_to_quantiles(mean, std_dev, cdf_value):
             tensor: batch of cdf predictions represented as equispaced quantiles with the shape [batch_size, num_buckets]  
         """
     normal_dist = Normal(mean, std_dev)
-    quantiles = normal_dist.icdf(cdf_value).T
     
+    quantiles=torch.zeros((mean.shape[0], cdf_values.shape[0]))
+
+    for i, cdf_value in enumerate(cdf_values):
+        x = normal_dist.icdf(cdf_value)
+        quantiles[:, i] = x.permute(*torch.arange(x.ndim - 1, -1, -1))
+        # quantiles[:, i] = normal_dist.icdf(cdf_value).T
+    quantiles[:, -1] = mean+6*std_dev 
     return quantiles
 
 class EarlyStopper:
@@ -85,7 +91,7 @@ class ContinuousQuantileRecalibrator(nn.Module):
         """
         tau, quantiles = inputs
         mu, sigma = self.predict(inputs)
-        return check_score(tau, mu, targets).mean() +self.add_l2_regularization(0.001)
+        return check_score(tau, mu, targets).mean() +self.add_l2_regularization(0.005)
 
     def add_l1_regularization(self, l1_lambda):
         """ l1 regularization
@@ -213,10 +219,12 @@ class DistCalibrator(Calibrator):
         patience=kwargs.get('es_patience', 50)
         min_delta=kwargs.get('es_delta', 0.0005)
         lr = kwargs.get('lr', 0.0001)
-        reps = kwargs.get('repetitions', 1)
-        
+        reps = kwargs.get('repetitions', 100)
+        best_loss = None
+        best_model = None
         # Train the recalibrator
         for iteration in range(reps):
+            # self._set_recalibrator(num_buckets=20)
             
             X_train = train_predictions
             y_train = train_labels
@@ -229,7 +237,8 @@ class DistCalibrator(Calibrator):
             optimizer = torch.optim.Adam(self.model.parameters(), lr=lr)
 
             early_stopper = EarlyStopper(patience=patience, min_delta=min_delta)
-            for epoch in tqdm(range(num_epochs)):
+            # for epoch in tqdm(range(num_epochs)):
+            for epoch in (range(num_epochs)):
 		        
                 for tau in taus:
                     loss = self.model((tau, X_train), y_train)
@@ -249,6 +258,16 @@ class DistCalibrator(Calibrator):
 
                 if X_val and early_stopper.early_stop(cal_after_val):
                     break
+            
+            if best_loss is None:
+                best_loss = loss
+            elif loss<=best_loss:
+                best_model = self.model
+                best_loss = loss
+            
+        # self.model = best_model
+
+            
 
     def __call__(self, predictions, *args, **kwargs):
         """ Use the learned model to calibrate the predictions. 
