@@ -1,4 +1,4 @@
-name: torchuq
+name: distcal
 channels:
   - pytorch
   - anaconda
